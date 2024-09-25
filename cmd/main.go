@@ -1,8 +1,5 @@
 package main
 
-// An example Bubble Tea server. This will put an ssh session into alt screen
-// and continually print up to date terminal information.
-
 import (
 	"context"
 	"errors"
@@ -13,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/timer"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/ssh"
@@ -34,10 +31,10 @@ const fish = `
                ////\                           _
               (//////--,,,,,_____            ,"
             _;"""----/////_______;,,        //
-__________;"o,-------------......"""""`+"`"+`'-._/(
+__________;"o,-------------......"""""` + "`" + `'-._/(
       ""'==._.__,;;;;"""           ____,.-.==
              "-.:______,...;---""/"   "    \(
-                 '-._      `+"`"+`-._("   ctr     \\
+                 '-._      ` + "`" + `-._("   ctr     \\
                      '-._                    '._
 `
 
@@ -100,9 +97,9 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	quitStyle := renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle)
 
 	m := model{
-		timer: timer.NewWithInterval(999999999 * time.Second, time.Millisecond),
-		time:     time.Now(),
-		appStyle: appStyle,
+		timer:     timer.NewWithInterval(999999999*time.Second, time.Millisecond),
+		time:      time.Now(),
+		appStyle:  appStyle,
 		txtStyle:  txtStyle,
 		fishStyle: fishStyle,
 		quitStyle: quitStyle,
@@ -111,11 +108,11 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 }
 
 type model struct {
-	timer	timer.Model
-	time 	time.Time
-	width int
-	height int
-	appStyle lipgloss.Style
+	timer     timer.Model
+	time      time.Time
+	width     int
+	height    int
+	appStyle  lipgloss.Style
 	txtStyle  lipgloss.Style
 	fishStyle lipgloss.Style
 	quitStyle lipgloss.Style
@@ -152,7 +149,7 @@ func (m model) View() string {
 	} else {
 		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render("Come back at 11:11"))
 	}
-	s = fmt.Sprintf("%s\n\n%s",  s, m.quitStyle.Render("Press 'q' to quit"))
+	s = fmt.Sprintf("%s\n\n%s", s, m.quitStyle.Render("Press 'q' to quit"))
 
 	// center the text
 	s = lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, s)
