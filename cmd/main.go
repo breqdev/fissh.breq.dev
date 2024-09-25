@@ -154,5 +154,5 @@ func (m model) View() string {
 	// center the text
 	s = lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, s)
 
-	return m.appStyle.Copy().Width(m.width).Height(m.height).Render(s)
+	return m.appStyle.Width(m.width).Height(m.height).Render(s)
 }
