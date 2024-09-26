@@ -153,7 +153,7 @@ func (m model) View() string {
 	if m.fish != "" {
 		s = fmt.Sprintf("%s\n\n%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render(m.fish), m.fishStyle.Render("make a fish"))
 	} else {
-		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render("Come back at 11:11"))
+		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render("come back at 11:11"))
 	}
 	s = fmt.Sprintf("%s\n\n%s", s, m.quitStyle.Render("Press 'q' to quit"))
 
