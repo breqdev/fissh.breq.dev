@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/breqdev/fissh.breq.dev/internal/fishes"
+	"github.com/breqdev/fissh.breq.dev/internal/timezone"
 	"github.com/charmbracelet/bubbles/timer"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -20,7 +21,6 @@ import (
 	"github.com/charmbracelet/wish/activeterm"
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
-	"github.com/ipinfo/go/v2/ipinfo"
 )
 
 const (
@@ -28,18 +28,6 @@ const (
 	port = "23234"
 )
 
-func lookup_timezone(ip_address string) string {
-	token := os.Getenv("IPINFO_TOKEN")
-
-	client := ipinfo.NewClient(nil, nil, token)
-
-	info, err := client.GetIPInfo(net.ParseIP(ip_address))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return info.Timezone
-}
 func main() {
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
@@ -97,7 +85,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	fishStyle := renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle)
 	quitStyle := renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle)
 
-	timezone := lookup_timezone(s.RemoteAddr().String())
+	timezone := timezone.LookupTimezone(s.RemoteAddr().String())
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		log.Fatal(err)
