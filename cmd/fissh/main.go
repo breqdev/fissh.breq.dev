@@ -82,7 +82,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	// appStyle := renderer.NewStyle().Background(lipgloss.Color("240"))
 	appStyle := renderer.NewStyle()
 	txtStyle := renderer.NewStyle().Foreground(lipgloss.Color("10")).Inherit(appStyle)
-	fishStyle := renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle)
+	fishStyle := renderer.NewStyle().Foreground(lipgloss.Color("4")).Inherit(appStyle)
 	quitStyle := renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle)
 
 	timezone := timezone.LookupTimezone(s.RemoteAddr().String())
@@ -96,7 +96,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		time:      time.Now(),
 		timezone:  loc,
 		page:      HomePage,
-		fish:      fishes.GetFish(pty.Window.Width, pty.Window.Height),
+		fish:      "",
 		width:     pty.Window.Width,
 		height:    pty.Window.Height,
 		appStyle:  appStyle,
@@ -151,6 +151,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.timer, cmd = m.timer.Update(msg)
 		m.time = time.Now()
+		if m.time.In(m.timezone).Format("03:04") == "11:11" || os.Getenv("ALWAYSFISH") == "1" {
+			if m.fish == "" {
+				m.fish = fishes.GetFish(m.width, m.height)
+			}
+		}
 		return m, cmd
 	}
 	return m, nil
@@ -169,14 +174,13 @@ func (m model) View() string {
 
 func (m model) HomePage() string {
 	s := fmt.Sprintf("The time is %s", m.time.In(m.timezone).Format("15:04:05"))
-	if m.time.In(m.timezone).Format("03:04") == "11:11" || os.Getenv("ALWAYSFISH") == "1" {
-		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render(m.fish))
+	if m.fish != "" {
+		s = fmt.Sprintf("%s\n\n%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render(m.fish), m.fishStyle.Render("make a fish"))
 	} else {
-		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render("Come back at 11:11"))
+		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render("come back at 11:11"))
 	}
 	s = fmt.Sprintf("%s\n\n%s", s, m.quitStyle.Render("Press 'a' for about or 'q' to quit"))
 
-	// center the text
 	s = lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, s)
 
 	return m.appStyle.Width(m.width).Height(m.height).Render(s)
