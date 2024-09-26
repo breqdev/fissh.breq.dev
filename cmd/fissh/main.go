@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -26,17 +28,75 @@ const (
 	port = "23234"
 )
 
-const fish = `
-                ,"(
-               ////\                           _
-              (//////--,,,,,_____            ,"
-            _;"""----/////_______;,,        //
-__________;"o,-------------......"""""` + "`" + `'-._/(
-      ""'==._.__,;;;;"""           ____,.-.==
-             "-.:______,...;---""/"   "    \(
-                 '-._      ` + "`" + `-._("   ctr     \\
-                     '-._                    '._
-`
+func get_fish(max_width int, max_height int) string {
+	// fish are stored in the fishes/*.txt files
+
+	// get the list of fish files
+	files, err := os.ReadDir("fishes")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// shuffle the list of fish files
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(files), func(i, j int) { files[i], files[j] = files[j], files[i] })
+
+	// iterate through them
+	for _, file := range files {
+		// read in the fish
+		fish, err := os.ReadFile("fishes/" + file.Name())
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// check if the fish fits in the terminal
+		num_lines := 0
+		max_length := 0
+		leading_spaces := -1
+
+		for _, line := range strings.Split(string(fish), "\n") {
+			num_lines += 1
+
+			if len(line) > max_length {
+				max_length = len(line)
+			}
+
+			line_leading_spaces := 0
+			for _, char := range line {
+				if char == ' ' {
+					line_leading_spaces += 1
+				} else {
+					break
+				}
+			}
+
+			if len(line) > line_leading_spaces {
+				if leading_spaces == -1 {
+					leading_spaces = line_leading_spaces
+				} else {
+					if line_leading_spaces < leading_spaces {
+						leading_spaces = line_leading_spaces
+					}
+				}
+			}
+		}
+
+		if num_lines < max_height && max_length < max_width {
+			new_fish := ""
+			for _, line := range strings.Split(string(fish), "\n") {
+				if len(line) > leading_spaces {
+					new_fish += line[leading_spaces:] + "\n"
+				} else {
+					new_fish += "\n"
+				}
+			}
+			return new_fish
+		}
+	}
+
+	// TODO this is bad
+	return ""
+}
 
 func main() {
 	s, err := wish.NewServer(
@@ -77,8 +137,7 @@ func main() {
 // tea.WithAltScreen) on a session by session basis.
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	// This should never fail, as we are using the activeterm middleware.
-	// pty, _, _ := s.Pty()
-	s.Pty()
+	pty, _, _ := s.Pty()
 
 	// When running a Bubble Tea app over SSH, you shouldn't use the default
 	// lipgloss.NewStyle function.
@@ -99,6 +158,9 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	m := model{
 		timer:     timer.NewWithInterval(999999999*time.Second, time.Millisecond),
 		time:      time.Now(),
+		fish:      get_fish(pty.Window.Width, pty.Window.Height),
+		width:     pty.Window.Width,
+		height:    pty.Window.Height,
 		appStyle:  appStyle,
 		txtStyle:  txtStyle,
 		fishStyle: fishStyle,
@@ -110,6 +172,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 type model struct {
 	timer     timer.Model
 	time      time.Time
+	fish      string
 	width     int
 	height    int
 	appStyle  lipgloss.Style
@@ -144,8 +207,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	s := fmt.Sprintf("The time is %s", m.time.Format("15:04:05"))
-	if m.time.Format("15:04") == "11:11" {
-		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render(fish))
+	if m.time.Format("15:04") == "11:11" || os.Getenv("ALWAYSFISH") == "1" {
+		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render(m.fish))
 	} else {
 		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render("Come back at 11:11"))
 	}
