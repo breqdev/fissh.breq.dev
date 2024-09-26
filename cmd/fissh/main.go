@@ -97,6 +97,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		styles: appStyles{
 			app:  appStyle,
 			txt:  renderer.NewStyle().Foreground(lipgloss.Color("2")).Inherit(appStyle),
+			about:  renderer.NewStyle().Foreground(lipgloss.Color("2")).Inherit(appStyle).Align(lipgloss.Center),
 			fish: renderer.NewStyle().Foreground(lipgloss.Color("4")).Inherit(appStyle),
 			quit: renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle),
 		},
@@ -107,6 +108,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 type appStyles struct {
 	app  lipgloss.Style
 	txt  lipgloss.Style
+	about  lipgloss.Style
 	fish lipgloss.Style
 	quit lipgloss.Style
 }
@@ -185,7 +187,13 @@ func (m model) HomePage() string {
 	return m.styles.app.Width(m.window.Width).Height(m.window.Height).Render(s)
 }
 
+const credits = `made with <3 by `+"\x1B]8;;https://breq.dev\x1B\\@breqdev\x1B]8;;\x1B\\"+` and `+"\x1B]8;;https://avasilver.dev\x1B\\@avasilver\x1B]8;;\x1B\\"+`
+inspired by `+"\x1B]8;;https://weepingwitch.github.io\x1B\\@weepingwitch\x1B]8;;\x1B\\"+`
+concept by `+"\x1B]8;;https://miakizz.quest\x1B\\@miakizz\x1B]8;;\x1B\\"+`
+fishes from `+"\x1B]8;;https://ascii.co.uk/art/fish\x1B\\ascii.co.uk\x1B]8;;\x1B\\"+`
+`
+
 func (m model) AboutPage() string {
-	aboutContent := fmt.Sprintf("%s\n\n%s", m.styles.txt.Render("Made with <3 by @breqdev and @avasilver"), m.styles.quit.Render("Press 'esc' to go back or 'q' to quit"))
+	aboutContent := fmt.Sprintf("%s\n\n%s", m.styles.about.Render(credits), m.styles.quit.Render("press 'esc' to go back or 'q' to quit"))
 	return lipgloss.Place(m.window.Width, m.window.Height, lipgloss.Center, lipgloss.Center, aboutContent)
 }
