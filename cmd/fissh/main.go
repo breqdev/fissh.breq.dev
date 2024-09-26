@@ -20,6 +20,7 @@ import (
 	"github.com/charmbracelet/wish/activeterm"
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
+	"github.com/ipinfo/go/v2/ipinfo"
 )
 
 const (
@@ -27,6 +28,18 @@ const (
 	port = "23234"
 )
 
+func lookup_timezone(ip_address string) string {
+	token := os.Getenv("IPINFO_TOKEN")
+
+	client := ipinfo.NewClient(nil, nil, token)
+
+	info, err := client.GetIPInfo(net.ParseIP(ip_address))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return info.Timezone
+}
 func main() {
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
@@ -84,9 +97,16 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	fishStyle := renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle)
 	quitStyle := renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle)
 
+	timezone := lookup_timezone(s.RemoteAddr().String())
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	m := model{
 		timer:     timer.NewWithInterval(999999999*time.Second, time.Millisecond),
 		time:      time.Now(),
+		timezone:  loc,
 		fish:      fishes.GetFish(pty.Window.Width, pty.Window.Height),
 		width:     pty.Window.Width,
 		height:    pty.Window.Height,
@@ -101,6 +121,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 type model struct {
 	timer     timer.Model
 	time      time.Time
+	timezone  *time.Location
 	fish      string
 	width     int
 	height    int
@@ -135,8 +156,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	s := fmt.Sprintf("The time is %s", m.time.Format("15:04:05"))
-	if m.time.Format("15:04") == "11:11" || os.Getenv("ALWAYSFISH") == "1" {
+	s := fmt.Sprintf("The time is %s", m.time.In(m.timezone).Format("15:04:05"))
+	if m.time.In(m.timezone).Format("03:04") == "11:11" || os.Getenv("ALWAYSFISH") == "1" {
 		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render(m.fish))
 	} else {
 		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render("Come back at 11:11"))
