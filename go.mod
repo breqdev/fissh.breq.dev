@@ -9,8 +9,8 @@ require (
 	github.com/charmbracelet/log v0.4.0
 	github.com/charmbracelet/ssh v0.0.0-20240725163421-eb71b85b27aa
 	github.com/charmbracelet/wish v1.4.3
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	github.com/ipinfo/go/v2 v2.10.0
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 )
 
 require (
