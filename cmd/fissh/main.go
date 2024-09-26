@@ -95,6 +95,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		timer:     timer.NewWithInterval(999999999*time.Second, time.Millisecond),
 		time:      time.Now(),
 		timezone:  loc,
+		page:      HomePage,
 		fish:      "",
 		width:     pty.Window.Width,
 		height:    pty.Window.Height,
@@ -106,10 +107,16 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
 
+const (
+	HomePage = iota
+	AboutPage
+)
+
 type model struct {
 	timer     timer.Model
 	time      time.Time
 	timezone  *time.Location
+	page      int
 	fish      string
 	width     int
 	height    int
@@ -129,6 +136,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
+		case "a":
+			m.page = AboutPage
+			return m, nil
+		case "esc":
+			m.page = HomePage
+			return m, nil
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -149,15 +162,31 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	switch m.page {
+	case HomePage:
+		return m.HomePage()
+	case AboutPage:
+		return m.AboutPage()
+	default:
+		return m.txtStyle.Render("Page Not Found")
+	}
+}
+
+func (m model) HomePage() string {
 	s := fmt.Sprintf("The time is %s", m.time.In(m.timezone).Format("15:04:05"))
 	if m.fish != "" {
 		s = fmt.Sprintf("%s\n\n%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render(m.fish), m.fishStyle.Render("make a fish"))
 	} else {
 		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render("come back at 11:11"))
 	}
-	s = fmt.Sprintf("%s\n\n%s", s, m.quitStyle.Render("Press 'q' to quit"))
+	s = fmt.Sprintf("%s\n\n%s", s, m.quitStyle.Render("Press 'a' for about or 'q' to quit"))
 
 	s = lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, s)
 
 	return m.appStyle.Width(m.width).Height(m.height).Render(s)
+}
+
+func (m model) AboutPage() string {
+	aboutContent := fmt.Sprintf("%s\n\n%s", m.txtStyle.Render("Made with <3 by @breqdev and @avasilver"), m.quitStyle.Render("Press 'esc' to go back or 'q' to quit"))
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, aboutContent)
 }
