@@ -98,7 +98,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 			app:  appStyle,
 			txt:  renderer.NewStyle().Foreground(lipgloss.Color("2")).Inherit(appStyle),
 			about:  renderer.NewStyle().Foreground(lipgloss.Color("2")).Inherit(appStyle).Align(lipgloss.Center),
-			fish: renderer.NewStyle().Foreground(lipgloss.Color("4")).Inherit(appStyle),
+			fish: renderer.NewStyle().Foreground(lipgloss.Color("12")).Inherit(appStyle),
 			quit: renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle),
 		},
 	}
