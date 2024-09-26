@@ -172,13 +172,13 @@ func (m model) View() string {
 }
 
 func (m model) HomePage() string {
-	s := fmt.Sprintf("The time is %s", m.time.In(m.timezone).Format("15:04:05"))
+	s := fmt.Sprintf("the time is %s", m.time.In(m.timezone).Format("15:04:05"))
 	if m.fish != "" {
 		s = fmt.Sprintf("%s\n\n%s\n\n%s", m.styles.txt.Render(s), m.styles.fish.Render(m.fish), m.styles.fish.Render("make a fish"))
 	} else {
 		s = fmt.Sprintf("%s\n\n%s", m.styles.txt.Render(s), m.styles.fish.Render("come back at 11:11"))
 	}
-	s = fmt.Sprintf("%s\n\n%s", s, m.styles.quit.Render("Press 'a' for about or 'q' to quit"))
+	s = fmt.Sprintf("%s\n\n%s", s, m.styles.quit.Render("press 'a' for about or 'q' to quit"))
 
 	s = lipgloss.Place(m.window.Width, m.window.Height, lipgloss.Center, lipgloss.Center, s)
 
