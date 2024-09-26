@@ -115,7 +115,6 @@ type appStyles struct {
 	txt    lipgloss.Style
 	about  lipgloss.Style
 	fish   lipgloss.Style
-	quit   lipgloss.Style
 }
 
 const (
@@ -149,6 +148,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc", "h":
 			m.page = HomePage
 			return m, nil
+		case "r":
+			if m.IsFishTime() {
+				m.fish = fishes.GetFish(m.window.Width, m.window.Height)
+			}
+			return m, nil
 		}
 	case tea.WindowSizeMsg:
 		m.window = msg
@@ -157,7 +161,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.timer, cmd = m.timer.Update(msg)
 		m.time = time.Now()
-		if m.time.In(m.timezone).Format("03:04") == "11:11" || os.Getenv("ALWAYSFISH") == "1" {
+		if m.IsFishTime() {
 			if m.fish == "" {
 				m.fish = fishes.GetFish(m.window.Width, m.window.Height)
 			}
@@ -165,6 +169,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	return m, nil
+}
+
+func (m model) IsFishTime() bool {
+	return m.time.In(m.timezone).Format("03:04") == "11:11" || os.Getenv("ALWAYSFISH") == "1"
 }
 
 const headerHeight = 5
