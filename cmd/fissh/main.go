@@ -95,6 +95,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		timer:     timer.NewWithInterval(999999999*time.Second, time.Millisecond),
 		time:      time.Now(),
 		timezone:  loc,
+		page:      HomePage,
 		fish:      fishes.GetFish(pty.Window.Width, pty.Window.Height),
 		width:     pty.Window.Width,
 		height:    pty.Window.Height,
@@ -106,10 +107,16 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
 
+const (
+	HomePage = iota
+	AboutPage
+)
+
 type model struct {
 	timer     timer.Model
 	time      time.Time
 	timezone  *time.Location
+	page      int
 	fish      string
 	width     int
 	height    int
@@ -129,6 +136,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
+		case "a":
+			m.page = AboutPage
+			return m, nil
+		case "esc":
+			m.page = HomePage
+			return m, nil
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
