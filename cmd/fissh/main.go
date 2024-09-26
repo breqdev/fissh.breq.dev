@@ -79,11 +79,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	// The recommended way to use these styles is to then pass them down to
 	// your Bubble Tea model.
 	renderer := bubbletea.MakeRenderer(s)
-	// appStyle := renderer.NewStyle().Background(lipgloss.Color("240"))
 	appStyle := renderer.NewStyle()
-	txtStyle := renderer.NewStyle().Foreground(lipgloss.Color("10")).Inherit(appStyle)
-	fishStyle := renderer.NewStyle().Foreground(lipgloss.Color("4")).Inherit(appStyle)
-	quitStyle := renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle)
 
 	timezone := timezone.LookupTimezone(s.RemoteAddr().String())
 	loc, err := time.LoadLocation(timezone)
@@ -92,19 +88,27 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	}
 
 	m := model{
-		timer:     timer.NewWithInterval(999999999*time.Second, time.Millisecond),
-		time:      time.Now(),
-		timezone:  loc,
-		page:      HomePage,
-		fish:      "",
-		width:     pty.Window.Width,
-		height:    pty.Window.Height,
-		appStyle:  appStyle,
-		txtStyle:  txtStyle,
-		fishStyle: fishStyle,
-		quitStyle: quitStyle,
+		timer:    timer.NewWithInterval(999999999*time.Second, time.Millisecond),
+		time:     time.Now(),
+		timezone: loc,
+		page:     HomePage,
+		fish:     "",
+		window:   tea.WindowSizeMsg{Width: pty.Window.Width, Height: pty.Window.Height},
+		styles: appStyles{
+			app:  appStyle,
+			txt:  renderer.NewStyle().Foreground(lipgloss.Color("10")).Inherit(appStyle),
+			fish: renderer.NewStyle().Foreground(lipgloss.Color("4")).Inherit(appStyle),
+			quit: renderer.NewStyle().Foreground(lipgloss.Color("8")).Inherit(appStyle),
+		},
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
+}
+
+type appStyles struct {
+	app  lipgloss.Style
+	txt  lipgloss.Style
+	fish lipgloss.Style
+	quit lipgloss.Style
 }
 
 const (
@@ -113,17 +117,13 @@ const (
 )
 
 type model struct {
-	timer     timer.Model
-	time      time.Time
-	timezone  *time.Location
-	page      int
-	fish      string
-	width     int
-	height    int
-	appStyle  lipgloss.Style
-	txtStyle  lipgloss.Style
-	fishStyle lipgloss.Style
-	quitStyle lipgloss.Style
+	timer    timer.Model
+	time     time.Time
+	timezone *time.Location
+	page     int
+	fish     string
+	window   tea.WindowSizeMsg
+	styles   appStyles
 }
 
 func (m model) Init() tea.Cmd {
@@ -144,8 +144,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
+		m.window = msg
 		return m, nil
 	case timer.TickMsg:
 		var cmd tea.Cmd
@@ -153,7 +152,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.time = time.Now()
 		if m.time.In(m.timezone).Format("03:04") == "11:11" || os.Getenv("ALWAYSFISH") == "1" {
 			if m.fish == "" {
-				m.fish = fishes.GetFish(m.width, m.height)
+				m.fish = fishes.GetFish(m.window.Width, m.window.Height)
 			}
 		}
 		return m, cmd
@@ -168,25 +167,25 @@ func (m model) View() string {
 	case AboutPage:
 		return m.AboutPage()
 	default:
-		return m.txtStyle.Render("Page Not Found")
+		return m.styles.txt.Render("Page Not Found")
 	}
 }
 
 func (m model) HomePage() string {
 	s := fmt.Sprintf("The time is %s", m.time.In(m.timezone).Format("15:04:05"))
 	if m.fish != "" {
-		s = fmt.Sprintf("%s\n\n%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render(m.fish), m.fishStyle.Render("make a fish"))
+		s = fmt.Sprintf("%s\n\n%s\n\n%s", m.styles.txt.Render(s), m.styles.fish.Render(m.fish), m.styles.fish.Render("make a fish"))
 	} else {
-		s = fmt.Sprintf("%s\n\n%s", m.txtStyle.Render(s), m.fishStyle.Render("come back at 11:11"))
+		s = fmt.Sprintf("%s\n\n%s", m.styles.txt.Render(s), m.styles.fish.Render("come back at 11:11"))
 	}
-	s = fmt.Sprintf("%s\n\n%s", s, m.quitStyle.Render("Press 'a' for about or 'q' to quit"))
+	s = fmt.Sprintf("%s\n\n%s", s, m.styles.quit.Render("Press 'a' for about or 'q' to quit"))
 
-	s = lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, s)
+	s = lipgloss.Place(m.window.Width, m.window.Height, lipgloss.Center, lipgloss.Center, s)
 
-	return m.appStyle.Width(m.width).Height(m.height).Render(s)
+	return m.styles.app.Width(m.window.Width).Height(m.window.Height).Render(s)
 }
 
 func (m model) AboutPage() string {
-	aboutContent := fmt.Sprintf("%s\n\n%s", m.txtStyle.Render("Made with <3 by @breqdev and @avasilver"), m.quitStyle.Render("Press 'esc' to go back or 'q' to quit"))
-	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, aboutContent)
+	aboutContent := fmt.Sprintf("%s\n\n%s", m.styles.txt.Render("Made with <3 by @breqdev and @avasilver"), m.styles.quit.Render("Press 'esc' to go back or 'q' to quit"))
+	return lipgloss.Place(m.window.Width, m.window.Height, lipgloss.Center, lipgloss.Center, aboutContent)
 }
