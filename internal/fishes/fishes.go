@@ -21,7 +21,7 @@ __________;"o,-------------......"""""` + "`" + `'-._/(
                      '-._                    '._
 `
 
-func GetFish(max_width int, max_height int) string {
+func GetFish(maxWidth int, maxHeight int) string {
 	// fish are stored in the fishes/*.txt files
 
 	// get the list of fish files
@@ -43,42 +43,42 @@ func GetFish(max_width int, max_height int) string {
 		}
 
 		// check if the fish fits in the terminal
-		num_lines := 0
-		max_length := 0
-		leading_spaces := -1
+		numLines := 0
+		maxLength := 0
+		leadingSpaces := -1
 
 		for _, line := range strings.Split(string(fish), "\n") {
-			num_lines += 1
+			numLines += 1
 
-			if len(line) > max_length {
-				max_length = len(line)
+			if len(line) > maxLength {
+				maxLength = len(line)
 			}
 
-			line_leading_spaces := 0
+			lineLeadingSpaces := 0
 			for _, char := range line {
 				if char == ' ' {
-					line_leading_spaces += 1
+					lineLeadingSpaces += 1
 				} else {
 					break
 				}
 			}
 
-			if len(line) > line_leading_spaces {
-				if leading_spaces == -1 {
-					leading_spaces = line_leading_spaces
+			if len(line) > lineLeadingSpaces {
+				if leadingSpaces == -1 {
+					leadingSpaces = lineLeadingSpaces
 				} else {
-					if line_leading_spaces < leading_spaces {
-						leading_spaces = line_leading_spaces
+					if lineLeadingSpaces < leadingSpaces {
+						leadingSpaces = lineLeadingSpaces
 					}
 				}
 			}
 		}
 
-		if num_lines < max_height && max_length < max_width {
+		if numLines < maxHeight && maxLength < maxWidth {
 			new_fish := ""
 			for _, line := range strings.Split(string(fish), "\n") {
-				if len(line) > leading_spaces {
-					new_fish += line[leading_spaces:] + "\n"
+				if len(line) > leadingSpaces {
+					new_fish += line[leadingSpaces:] + "\n"
 				} else {
 					new_fish += "\n"
 				}
