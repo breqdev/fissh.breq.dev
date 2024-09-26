@@ -9,18 +9,6 @@ import (
 	"golang.org/x/exp/rand"
 )
 
-const Fish = `
-                ,"(
-               ////\                           _
-              (//////--,,,,,_____            ,"
-            _;"""----/////_______;,,        //
-__________;"o,-------------......"""""` + "`" + `'-._/(
-      ""'==._.__,;;;;"""           ____,.-.==
-             "-.:______,...;---""/"   "    \(
-                 '-._      ` + "`" + `-._("   ctr     \\
-                     '-._                    '._
-`
-
 func GetFish(maxWidth int, maxHeight int) string {
 	// fish are stored in the fishes/*.txt files
 
