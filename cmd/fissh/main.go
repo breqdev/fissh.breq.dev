@@ -23,12 +23,16 @@ import (
 	"github.com/charmbracelet/wish/logging"
 )
 
-const (
-	host = "0.0.0.0"
-	port = "23234"
-)
-
 func main() {
+	host := os.Getenv("HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "23234"
+	}
+
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
