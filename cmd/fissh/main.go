@@ -100,7 +100,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		window:   tea.WindowSizeMsg{Width: pty.Window.Width, Height: pty.Window.Height},
 		styles: appStyles{
 			app:    appStyle,
-			header: renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("2")).Border(sectionBorder).Inherit(appStyle).AlignVertical(lipgloss.Top),
+			header: renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("8")).Margin(2).Inherit(appStyle).AlignVertical(lipgloss.Top),
 			txt:    renderer.NewStyle().Foreground(lipgloss.Color("2")).Inherit(appStyle),
 			about:  renderer.NewStyle().Foreground(lipgloss.Color("2")).Inherit(appStyle).Align(lipgloss.Center),
 			fish:   renderer.NewStyle().Foreground(lipgloss.Color("12")).Inherit(appStyle),
@@ -175,48 +175,36 @@ func (m model) IsFishTime() bool {
 	return m.time.In(m.timezone).Format("03:04") == "11:11" || os.Getenv("ALWAYSFISH") == "1"
 }
 
-const headerHeight = 5
+const menuHeight = 5
 
 func (m model) View() string {
-
-	header := lipgloss.Place(m.window.Width, headerHeight, lipgloss.Center, lipgloss.Center, m.Header())
-	page := lipgloss.Place(m.window.Width, m.window.Height-headerHeight, lipgloss.Center, lipgloss.Center, m.Content())
-	return lipgloss.JoinVertical(lipgloss.Center, header, page)
+	page := lipgloss.Place(m.window.Width, m.window.Height-menuHeight, lipgloss.Center, lipgloss.Center, m.content())
+	menu := lipgloss.Place(m.window.Width, menuHeight, lipgloss.Center, lipgloss.Center, m.menu())
+	return lipgloss.JoinVertical(lipgloss.Center, page, menu)
 }
 
-var sectionBorder = lipgloss.Border{
-	Top:         "─",
-	Bottom:      "─",
-	Left:        "│",
-	Right:       "│",
-	TopLeft:     "╭",
-	TopRight:    "╮",
-	BottomLeft:  "╰",
-	BottomRight: "╯",
-}
-
-func (m model) Header() string {
+func (m model) menu() string {
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		m.styles.header.Render("(esc/h) Home"),
+		m.styles.header.Render("(esc/h) home"),
 		m.styles.header.Render("(a) about"),
 		m.styles.header.Render("(r) refresh"),
 		m.styles.header.Foreground(lipgloss.Color("124")).Render("(q) quit"),
 	)
 }
 
-func (m model) Content() string {
+func (m model) content() string {
 	switch m.page {
 	case HomePage:
-		return m.HomePage()
+		return m.homepage()
 	case AboutPage:
-		return m.AboutPage()
+		return m.aboutpage()
 	default:
 		return m.styles.txt.Render("Page Not Found")
 	}
 }
 
-func (m model) HomePage() string {
+func (m model) homepage() string {
 	s := fmt.Sprintf("the time is %s", m.time.In(m.timezone).Format("15:04:05"))
 	if m.fish != "" {
 		s = fmt.Sprintf("%s\n\n%s\n\n%s", m.styles.txt.Render(s), m.styles.fish.Render(m.fish), m.styles.fish.Render("make a fish"))
@@ -231,6 +219,6 @@ inspired by ` + "\x1B]8;;https://weepingwitch.github.io\x1B\\@weepingwitch\x1B]8
 concept by ` + "\x1B]8;;https://miakizz.quest\x1B\\@miakizz\x1B]8;;\x1B\\" + `
 fishes from ` + "\x1B]8;;https://ascii.co.uk/art/fish\x1B\\ascii.co.uk\x1B]8;;\x1B\\"
 
-func (m model) AboutPage() string {
+func (m model) aboutpage() string {
 	return m.styles.about.Render(credits)
 }
