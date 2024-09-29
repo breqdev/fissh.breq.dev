@@ -205,7 +205,7 @@ func (m model) content() string {
 }
 
 func (m model) homepage() string {
-	s := fmt.Sprintf("the time is %s", m.time.In(m.timezone).Format("15:04:05"))
+	s := fmt.Sprintf("the time is %s", m.time.In(m.timezone).Format("03:04:05 PM"))
 	if m.fish != "" {
 		s = fmt.Sprintf("%s\n\n%s\n\n%s", m.styles.txt.Render(s), m.styles.fish.Render(m.fish), m.styles.fish.Render("make a fish"))
 	} else {
