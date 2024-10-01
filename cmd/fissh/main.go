@@ -7,6 +7,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -65,6 +67,16 @@ func main() {
 	}
 }
 
+func extractTimezoneFromEnv(env []string) (string, error) {
+	idx := slices.IndexFunc(env, func(s string) bool { return strings.HasPrefix(s, "TIMEZONE=") })
+
+	if idx == -1 {
+		return "", errors.New("timezone not found in env")
+	} else {
+		return env[idx][9:], nil
+	}
+}
+
 // You can wire any Bubble Tea model up to the middleware with a function that
 // handles the incoming ssh.Session. Here we just grab the terminal info and
 // pass it to the new model. You can also return tea.ProgramOptions (such as
@@ -86,8 +98,13 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	appStyle := renderer.NewStyle().AlignHorizontal(lipgloss.Center)
 
 	ip := s.RemoteAddr().(*net.TCPAddr).IP
-	timezone := timezone.LookupTimezone(ip.String())
-	loc, err := time.LoadLocation(timezone)
+
+	foundTimeZone, err := extractTimezoneFromEnv(s.Environ())
+	if err != nil {
+		foundTimeZone = timezone.LookupTimezone(ip.String())
+	}
+
+	loc, err := time.LoadLocation(foundTimeZone)
 	if err != nil {
 		log.Fatal(err)
 	}
