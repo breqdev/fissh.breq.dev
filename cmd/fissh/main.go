@@ -211,12 +211,10 @@ func (m model) content() string {
 
 func (m model) homepage() string {
 	s := fmt.Sprintf("the time is %s", m.time.In(m.timezone).Format("03:04:05 pm"))
-	if m.fish != "" {
-		s = fmt.Sprintf("%s\n\n%s\n\n%s", m.styles.txt.Render(s), m.styles.fish.Render(m.fish), m.styles.fish.Render("make a fish"))
-	} else {
-		s = fmt.Sprintf("%s\n\n%s", m.styles.txt.Render(s), m.styles.fish.Render("come back at 11:11"))
+	if m.fish == "" {
+		return fmt.Sprintf("%s\n\n%s", m.styles.txt.Render(s), m.styles.fish.Render("come back at 11:11"))
 	}
-	return s
+	return fmt.Sprintf("%s\n\n%s\n\n%s", m.styles.txt.Render(s), m.styles.fish.Render(m.fish), m.styles.fish.Render("make a fish"))
 }
 
 const credits = `made with <3 by ` + "\x1B]8;;https://breq.dev\x1B\\@breqdev\x1B]8;;\x1B\\ and \x1B]8;;https://avasilver.dev\x1B\\@avasilver\x1B]8;;\x1B\\" + `
