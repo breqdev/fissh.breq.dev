@@ -68,13 +68,20 @@ func main() {
 }
 
 func extractTimezoneFromEnv(env []string) (string, error) {
-	idx := slices.IndexFunc(env, func(s string) bool { return strings.HasPrefix(s, "TIMEZONE=") })
-
+	const envName = "TZ="
+	idx := slices.IndexFunc(env, func(s string) bool { return strings.HasPrefix(s, envName) })
 	if idx == -1 {
-		return "", errors.New("timezone not found in env")
-	} else {
-		return env[idx][9:], nil
+		return "", nil
 	}
+
+	timezone := env[idx][len(envName):]
+
+	_, err := time.LoadLocation(timezone)
+	if err != nil {
+		return "", err
+	}
+	return timezone, nil
+
 }
 
 // You can wire any Bubble Tea model up to the middleware with a function that
@@ -99,24 +106,30 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 
 	ip := s.RemoteAddr().(*net.TCPAddr).IP
 
-	foundTimeZone, err := extractTimezoneFromEnv(s.Environ())
-	if err != nil {
-		foundTimeZone = timezone.LookupTimezone(ip.String())
+	envTimezone, err := extractTimezoneFromEnv(s.Environ())
+
+	var foundTimezone string
+
+	if envTimezone == "" || err != nil {
+		foundTimezone = timezone.LookupTimezone(ip.String())
+	} else {
+		foundTimezone = envTimezone
 	}
 
-	loc, err := time.LoadLocation(foundTimeZone)
+	loc, err := time.LoadLocation(foundTimezone)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	m := model{
-		timer:    timer.NewWithInterval(999999999*time.Second, time.Millisecond),
-		time:     time.Now(),
-		ip: ip,
-		timezone: loc,
-		page:     HomePage,
-		fish:     "",
-		window:   tea.WindowSizeMsg{Width: pty.Window.Width, Height: pty.Window.Height},
+		timer:          timer.NewWithInterval(999999999*time.Second, time.Millisecond),
+		time:           time.Now(),
+		ip:             ip,
+		timezone:       loc,
+		timezoneViaEnv: envTimezone != "",
+		page:           HomePage,
+		fish:           "",
+		window:         tea.WindowSizeMsg{Width: pty.Window.Width, Height: pty.Window.Height},
 		styles: appStyles{
 			app:    appStyle,
 			header: renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("7")).Margin(2).Inherit(appStyle).AlignVertical(lipgloss.Top),
@@ -144,14 +157,15 @@ const (
 )
 
 type model struct {
-	timer    timer.Model
-	time     time.Time
-	ip net.IP
-	timezone *time.Location
-	page     int
-	fish     string
-	window   tea.WindowSizeMsg
-	styles   appStyles
+	timer          timer.Model
+	time           time.Time
+	ip             net.IP
+	timezone       *time.Location
+	timezoneViaEnv bool
+	page           int
+	fish           string
+	window         tea.WindowSizeMsg
+	styles         appStyles
 }
 
 func (m model) Init() tea.Cmd {
@@ -240,6 +254,12 @@ concept by ` + "\x1B]8;;https://miakizz.quest\x1B\\@miakizz\x1B]8;;\x1B\\" + `
 fishes from ` + "\x1B]8;;https://ascii.co.uk/art/fish\x1B\\ascii.co.uk\x1B]8;;\x1B\\"
 
 func (m model) aboutpage() string {
-	debugText := fmt.Sprintf("you are calling from: %s (%s)", m.ip.String(), m.timezone);
+	var timezoneSource string
+	if m.timezoneViaEnv {
+		timezoneSource = fmt.Sprintf("timezone read from env variable (%s)\n", m.timezone)
+	} else {
+		timezoneSource = fmt.Sprintf("timezone fetched from your ip (%s)\n", m.timezone)
+	}
+	debugText := timezoneSource + fmt.Sprintf("you are calling from: %s", m.ip.String())
 	return fmt.Sprintf("%s\n\n%s", m.styles.about.Render(credits), m.styles.debug.Render(debugText))
 }
