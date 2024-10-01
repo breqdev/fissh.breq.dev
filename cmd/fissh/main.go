@@ -85,7 +85,8 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	renderer := bubbletea.MakeRenderer(s)
 	appStyle := renderer.NewStyle().AlignHorizontal(lipgloss.Center)
 
-	timezone := timezone.LookupTimezone(s.RemoteAddr().String())
+	ip := s.RemoteAddr().(*net.TCPAddr).IP
+	timezone := timezone.LookupTimezone(ip.String())
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		log.Fatal(err)
@@ -94,15 +95,17 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	m := model{
 		timer:    timer.NewWithInterval(999999999*time.Second, time.Millisecond),
 		time:     time.Now(),
+		ip: ip,
 		timezone: loc,
 		page:     HomePage,
 		fish:     "",
 		window:   tea.WindowSizeMsg{Width: pty.Window.Width, Height: pty.Window.Height},
 		styles: appStyles{
 			app:    appStyle,
-			header: renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("8")).Margin(2).Inherit(appStyle).AlignVertical(lipgloss.Top),
+			header: renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("7")).Margin(2).Inherit(appStyle).AlignVertical(lipgloss.Top),
 			txt:    renderer.NewStyle().Foreground(lipgloss.Color("2")).Inherit(appStyle),
 			about:  renderer.NewStyle().Foreground(lipgloss.Color("2")).Inherit(appStyle).Align(lipgloss.Center),
+			debug:  renderer.NewStyle().Foreground(lipgloss.Color("4")).Inherit(appStyle).Align(lipgloss.Center),
 			fish:   renderer.NewStyle().Foreground(lipgloss.Color("12")).Inherit(appStyle),
 		},
 	}
@@ -114,6 +117,7 @@ type appStyles struct {
 	header lipgloss.Style
 	txt    lipgloss.Style
 	about  lipgloss.Style
+	debug  lipgloss.Style
 	fish   lipgloss.Style
 }
 
@@ -125,6 +129,7 @@ const (
 type model struct {
 	timer    timer.Model
 	time     time.Time
+	ip net.IP
 	timezone *time.Location
 	page     int
 	fish     string
@@ -220,5 +225,6 @@ concept by ` + "\x1B]8;;https://miakizz.quest\x1B\\@miakizz\x1B]8;;\x1B\\" + `
 fishes from ` + "\x1B]8;;https://ascii.co.uk/art/fish\x1B\\ascii.co.uk\x1B]8;;\x1B\\"
 
 func (m model) aboutpage() string {
-	return m.styles.about.Render(credits)
+	debugText := fmt.Sprintf("you are calling from: %s (%s)", m.ip.String(), m.timezone);
+	return fmt.Sprintf("%s\n\n%s", m.styles.about.Render(credits), m.styles.debug.Render(debugText))
 }
