@@ -136,7 +136,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 			txt:    renderer.NewStyle().Foreground(lipgloss.Color("2")).Inherit(appStyle),
 			about:  renderer.NewStyle().Foreground(lipgloss.Color("2")).Inherit(appStyle).Align(lipgloss.Center),
 			debug:  renderer.NewStyle().Foreground(lipgloss.Color("4")).Inherit(appStyle).Align(lipgloss.Center),
-			fish:   renderer.NewStyle().Foreground(lipgloss.Color("12")).Inherit(appStyle),
+			fish:   renderer.NewStyle().Foreground(lipgloss.Color("12")).Inherit(appStyle).Align(lipgloss.Center),
 		},
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}

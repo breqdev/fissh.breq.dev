@@ -31,45 +31,23 @@ func GetFish(maxWidth int, maxHeight int) string {
 		}
 
 		// check if the fish fits in the terminal
-		numLines := 0
+		lines := strings.Split(string(fish), "\n")
+		numLines := len(lines)
 		maxLength := 0
-		leadingSpaces := -1
-
-		for _, line := range strings.Split(string(fish), "\n") {
-			numLines += 1
-
-			if len(line) > maxLength {
-				maxLength = len(line)
-			}
-
-			lineLeadingSpaces := 0
-			for _, char := range line {
-				if char == ' ' {
-					lineLeadingSpaces += 1
-				} else {
-					break
-				}
-			}
-
-			if len(line) > lineLeadingSpaces {
-				if leadingSpaces == -1 {
-					leadingSpaces = lineLeadingSpaces
-				} else {
-					if lineLeadingSpaces < leadingSpaces {
-						leadingSpaces = lineLeadingSpaces
-					}
-				}
+		for _, line := range lines {
+			length := len(line)
+			if length > maxLength {
+				maxLength = length
 			}
 		}
 
 		if numLines < maxHeight && maxLength < maxWidth {
 			new_fish := ""
-			for _, line := range strings.Split(string(fish), "\n") {
-				if len(line) > leadingSpaces {
-					new_fish += line[leadingSpaces:] + "\n"
-				} else {
-					new_fish += "\n"
+			for _, line := range lines {
+				if len(line) < maxWidth {
+					line += strings.Repeat(" ", maxLength-len(line))
 				}
+				new_fish += line + "\n"
 			}
 			return new_fish
 		}
