@@ -35,9 +35,11 @@ func main() {
 	if port == "" {
 		port = "23234"
 	}
-	statsd, err := statsd.New("unix:///var/run/datadog/dsd.socket")
+	var statsdClient statsd.ClientInterface
+	statsdClient, err := statsd.New("unix:///var/run/datadog/dsd.socket")
 	if err != nil {
-		log.Fatal(err)
+		log.Warn("Could not connect to statsd, no metrics will be submitted.")
+		statsdClient = &statsd.NoOpClient{}
 	}
 
 	s, err := wish.NewServer(
@@ -45,7 +47,7 @@ func main() {
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
 		wish.WithMiddleware(
 			bubbletea.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
-				return teaHandler(sess, statsd)
+				return teaHandler(sess, statsdClient)
 			}),
 			activeterm.Middleware(), // Bubble Tea apps usually require a PTY.
 			logging.Middleware(),
@@ -95,7 +97,7 @@ func extractTimezoneFromEnv(env []string) (string, error) {
 // handles the incoming ssh.Session. Here we just grab the terminal info and
 // pass it to the new model. You can also return tea.ProgramOptions (such as
 // tea.WithAltScreen) on a session by session basis.
-func teaHandler(s ssh.Session, statsd *statsd.Client) (tea.Model, []tea.ProgramOption) {
+func teaHandler(s ssh.Session, statsd statsd.ClientInterface) (tea.Model, []tea.ProgramOption) {
 	// This should never fail, as we are using the activeterm middleware.
 	pty, _, _ := s.Pty()
 
@@ -180,7 +182,7 @@ type model struct {
 	fish           string
 	window         tea.WindowSizeMsg
 	styles         appStyles
-	statsd         *statsd.Client
+	statsd         statsd.ClientInterface
 }
 
 func (m model) Init() tea.Cmd {
