@@ -35,7 +35,7 @@ func main() {
 	if port == "" {
 		port = "23234"
 	}
-	statsd, err := statsd.New("127.0.0.1:8125")
+	statsd, err := statsd.New("unix:///var/run/datadog/dsd.socket")
 	if err != nil {
 		log.Fatal(err)
 	}
