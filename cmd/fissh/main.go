@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/breqdev/fissh.breq.dev/internal/fishes"
 	"github.com/breqdev/fissh.breq.dev/internal/timezone"
 	"github.com/charmbracelet/bubbles/timer"
@@ -34,12 +35,18 @@ func main() {
 	if port == "" {
 		port = "23234"
 	}
+	statsd, err := statsd.New("127.0.0.1:8125")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
 		wish.WithMiddleware(
-			bubbletea.Middleware(teaHandler),
+			bubbletea.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
+				return teaHandler(sess, statsd)
+			}),
 			activeterm.Middleware(), // Bubble Tea apps usually require a PTY.
 			logging.Middleware(),
 		),
@@ -88,7 +95,7 @@ func extractTimezoneFromEnv(env []string) (string, error) {
 // handles the incoming ssh.Session. Here we just grab the terminal info and
 // pass it to the new model. You can also return tea.ProgramOptions (such as
 // tea.WithAltScreen) on a session by session basis.
-func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
+func teaHandler(s ssh.Session, statsd *statsd.Client) (tea.Model, []tea.ProgramOption) {
 	// This should never fail, as we are using the activeterm middleware.
 	pty, _, _ := s.Pty()
 
@@ -109,17 +116,23 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	envTimezone, err := extractTimezoneFromEnv(s.Environ())
 
 	var foundTimezone string
-
+	var timezoneSource string
 	if envTimezone == "" || err != nil {
 		foundTimezone = timezone.LookupTimezone(ip.String())
+		timezoneSource = "ip_lookup"
 	} else {
 		foundTimezone = envTimezone
+		timezoneSource = "env"
 	}
 
 	loc, err := time.LoadLocation(foundTimezone)
 	if err != nil {
 		log.Fatal(err)
 	}
+	statsd.Incr("fissh.session", []string{
+		"timezone:" + strings.ToLower(foundTimezone),
+		"timezone_source:" + timezoneSource,
+	}, 1)
 
 	m := model{
 		timer:          timer.NewWithInterval(999999999*time.Second, time.Millisecond),
@@ -138,6 +151,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 			debug:  renderer.NewStyle().Foreground(lipgloss.Color("4")).Inherit(appStyle).Align(lipgloss.Center),
 			fish:   renderer.NewStyle().Foreground(lipgloss.Color("12")).Inherit(appStyle).Align(lipgloss.Center),
 		},
+		statsd: statsd,
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
@@ -166,6 +180,7 @@ type model struct {
 	fish           string
 	window         tea.WindowSizeMsg
 	styles         appStyles
+	statsd         *statsd.Client
 }
 
 func (m model) Init() tea.Cmd {
