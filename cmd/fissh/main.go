@@ -52,6 +52,7 @@ func main() {
 			activeterm.Middleware(), // Bubble Tea apps usually require a PTY.
 			logging.Middleware(),
 		),
+		wish.WithMaxTimeout(10*time.Minute),
 	)
 	if err != nil {
 		log.Error("Could not start server", "error", err)
